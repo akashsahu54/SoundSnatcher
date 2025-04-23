@@ -1,6 +1,6 @@
 import streamlit as st
 import time
-from yt_dlp import YoutubeDL
+from youtube_dl import YoutubeDL
 
 st.set_page_config(page_title="🎵 YouTube Audio Downloader")
 
