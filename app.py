@@ -9,14 +9,10 @@ video_url = st.text_input("🔗 Video URL")
 
 if video_url:
     try:
-        # Output directory
-        output_dir = "downloads"
-        os.makedirs(output_dir, exist_ok=True)
-
         # Set up the downloader options
         ydl_opts = {
             'format': 'bestaudio/best',
-            'outtmpl': os.path.join(output_dir, '%(title)s.%(ext)s'),
+            'outtmpl': '%(title)s.%(ext)s',  # Directly save the file in the current directory
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
@@ -30,14 +26,14 @@ if video_url:
                 info_dict = ydl.extract_info(video_url, download=True)
                 title = info_dict.get('title', 'audio')
                 filename = f"{title}.mp3"
-                file_path = os.path.join(output_dir, filename)
-
-                if os.path.exists(file_path):
+                
+                # Check if file exists in the current directory
+                if os.path.exists(filename):
                     st.success("✅ Audio downloaded successfully!")
-                    st.write(f"**Saved as:** `{file_path}`")
+                    st.write(f"**Saved as:** `{filename}`")
 
                     # Show download button
-                    with open(file_path, "rb") as f:
+                    with open(filename, "rb") as f:
                         st.download_button(
                             label="⬇️ Download MP3",
                             data=f,
