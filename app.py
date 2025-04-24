@@ -1,55 +1,50 @@
 import streamlit as st
-import time
-from youtube_dl import YoutubeDL
-
-st.set_page_config(page_title="🎵 YouTube Audio Downloader")
+from yt_dlp import YoutubeDL
+import os
 
 st.title("🎵 YouTube Audio Downloader")
-st.markdown("Paste the YouTube video URL to download audio as MP3:")
+st.write("Paste the YouTube video URL to download audio as MP3:")
 
-url = st.text_input("🔗 Video URL", key="url_input")
-status_placeholder = st.empty()
+video_url = st.text_input("🔗 Video URL")
 
-def download_audio():
-    ydl_opts = {
-        'format': 'bestaudio/best',
-        'outtmpl': '%(title)s.%(ext)s',
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '192',
-        }],
-        'ffmpeg_location': 'ffmpeg',  # Optional: customize if needed
-        'quiet': True,
-        'noplaylist': True,
-        'progress_hooks': [progress_hook]
-    }
+if video_url:
+    try:
+        # Output directory
+        output_dir = "downloads"
+        os.makedirs(output_dir, exist_ok=True)
 
-    with YoutubeDL(ydl_opts) as ydl:
-        ydl.download([url])
+        # Set up the downloader options
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'outtmpl': os.path.join(output_dir, '%(title)s.%(ext)s'),
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': '192',
+            }],
+        }
 
-def progress_hook(d):
-    if d['status'] == 'downloading':
-        percent = d.get('_percent_str', '').strip()
-        speed = d.get('_speed_str', '').strip()
-        status_placeholder.info(f"📥 Downloading: **{percent}** at **{speed}**")
-    elif d['status'] == 'finished':
-        status_placeholder.success("✅ Audio download complete! Finalizing...")
+        # Download when user clicks button
+        if st.button("Download Audio"):
+            with YoutubeDL(ydl_opts) as ydl:
+                info_dict = ydl.extract_info(video_url, download=True)
+                title = info_dict.get('title', 'audio')
+                filename = f"{title}.mp3"
+                file_path = os.path.join(output_dir, filename)
 
-if st.button("🎧 Download Audio"):
-    if not url.strip():
-        st.warning("⚠️ Please enter a valid YouTube URL.")
-    else:
-        try:
-            download_audio()
-        except Exception as e:
-            if "ffmpeg" in str(e).lower() or "postprocessing" in str(e).lower():
-                pass  # Ignore ffmpeg/postprocessing errors
-            else:
-                st.error("❌ An unexpected error occurred. Please try again.")
-        finally:
-            status_placeholder.empty()
-            st.success("✅ Audio downloaded successfully!")
-            st.balloons()
-            time.sleep(5)  # Wait 5 seconds
-            st.rerun()  # Refresh the app
+                if os.path.exists(file_path):
+                    st.success("✅ Audio downloaded successfully!")
+                    st.write(f"**Saved as:** `{file_path}`")
+
+                    # Show download button
+                    with open(file_path, "rb") as f:
+                        st.download_button(
+                            label="⬇️ Download MP3",
+                            data=f,
+                            file_name=filename,
+                            mime="audio/mpeg"
+                        )
+                else:
+                    st.error("❌ File was not found after download.")
+    except Exception as e:
+        st.error(f"❌ An unexpected error occurred: {e}")
