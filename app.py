@@ -32,7 +32,7 @@ if video_url:
             if ffmpeg_location:
                 ydl_opts['ffmpeg_location'] = ffmpeg_location
 
-            if st.button("Download Audio"):
+            if st.button("Prepare Audio"):
                 with YoutubeDL(ydl_opts) as ydl:
                     # Extract video info
                     info_dict = ydl.extract_info(video_url, download=True)
@@ -47,7 +47,7 @@ if video_url:
                     mp3_filename = base + '.mp3'
 
                     if os.path.exists(mp3_filename):
-                        st.success("✅ Audio downloaded successfully!")
+                        st.success("✅ Audio prepared successfully!")
                         with open(mp3_filename, "rb") as f:
                             st.download_button(
                                 label="⬇️ Download MP3",
