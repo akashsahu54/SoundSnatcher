@@ -1,5 +1,5 @@
-import streamlit as st
-from yt_dlp import YoutubeDL
+import streamlit as st # type: ignore
+from yt_dlp import YoutubeDL # type: ignore
 import os
 import tempfile
 
@@ -34,7 +34,14 @@ if video_url:
 
             if st.button("Download Audio"):
                 with YoutubeDL(ydl_opts) as ydl:
+                    # Extract video info
                     info_dict = ydl.extract_info(video_url, download=True)
+                    thumbnail_url = info_dict.get("thumbnail", None)
+
+                    # Display thumbnail if available
+                    if thumbnail_url:
+                        st.image(thumbnail_url, caption="Video Thumbnail", use_container_width=True)
+
                     downloaded_filename = ydl.prepare_filename(info_dict)
                     base, _ = os.path.splitext(downloaded_filename)
                     mp3_filename = base + '.mp3'
