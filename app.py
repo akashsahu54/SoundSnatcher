@@ -4,7 +4,7 @@ import os
 import tempfile
 
 st.title("🎵 Sounds Snatcher")
-st.write("Paste the YouTube video URL to download audio as MP3:")
+st.write("Paste the video URL from any social media plateform to download audio as MP3:")
 
 video_url = st.text_input("🔗 Video URL")
 
