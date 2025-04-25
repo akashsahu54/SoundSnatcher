@@ -4,7 +4,7 @@ import os
 import tempfile
 
 st.title("🎵 Sounds Snatcher")
-st.write("Paste the video URL from any social media plateform to download audio as MP3:")
+st.write("Paste the video URL from any social media platform to download audio as MP3:")
 
 video_url = st.text_input("🔗 Video URL")
 
@@ -12,37 +12,30 @@ if video_url:
     try:
         with tempfile.TemporaryDirectory() as temp_dir:
             ydl_opts = {
-    'format': 'bestaudio/best',
-    'outtmpl': os.path.join(temp_dir, '%(title)s.%(ext)s'),
-    'postprocessors': [{
-        'key': 'FFmpegExtractAudio',
-        'preferredcodec': 'mp3',
-        'preferredquality': '192',
-    }],
-    'noplaylist': True,
-    'quiet': True,
-    'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-    'restrictfilenames': True,
-    'nocheckcertificate': True,
-}
-
+                'format': 'bestaudio/best',
+                'outtmpl': os.path.join(temp_dir, '%(title)s.%(ext)s'),
+                'postprocessors': [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'mp3',
+                    'preferredquality': '192',
+                }],
+            }
 
             if st.button("Download Audio"):
                 with YoutubeDL(ydl_opts) as ydl:
                     info_dict = ydl.extract_info(video_url, download=True)
-                    title = info_dict.get('title', 'audio')
-                    filename = f"{title}.mp3"
-                    file_path = os.path.join(temp_dir, filename)
+                    # ✅ Use yt-dlp's internal filename detection
+                    downloaded_filename = ydl.prepare_filename(info_dict)
+                    base, _ = os.path.splitext(downloaded_filename)
+                    mp3_filename = base + '.mp3'
 
-                    # ✅ Check if file exists
-                    if os.path.exists(file_path):
+                    if os.path.exists(mp3_filename):
                         st.success("✅ Audio downloaded successfully!")
-
-                        with open(file_path, "rb") as f:
+                        with open(mp3_filename, "rb") as f:
                             st.download_button(
                                 label="⬇️ Download MP3",
                                 data=f,
-                                file_name=filename,
+                                file_name=os.path.basename(mp3_filename),
                                 mime="audio/mpeg"
                             )
                     else:
