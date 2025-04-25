@@ -12,14 +12,20 @@ if video_url:
     try:
         with tempfile.TemporaryDirectory() as temp_dir:
             ydl_opts = {
-                'format': 'bestaudio/best',
-                'outtmpl': os.path.join(temp_dir, '%(title)s.%(ext)s'),
-                'postprocessors': [{
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                    'preferredquality': '192',
-                }],
-            }
+    'format': 'bestaudio/best',
+    'outtmpl': os.path.join(temp_dir, '%(title)s.%(ext)s'),
+    'postprocessors': [{
+        'key': 'FFmpegExtractAudio',
+        'preferredcodec': 'mp3',
+        'preferredquality': '192',
+    }],
+    'noplaylist': True,
+    'quiet': True,
+    'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+    'restrictfilenames': True,
+    'nocheckcertificate': True,
+}
+
 
             if st.button("Download Audio"):
                 with YoutubeDL(ydl_opts) as ydl:
