@@ -1,61 +1,96 @@
-import streamlit as st # type: ignore
-from yt_dlp import YoutubeDL # type: ignore
+import streamlit as st  # type: ignore
+from yt_dlp import YoutubeDL  # type: ignore
 import os
 import tempfile
 
-st.title("🎵 Sounds Snatcher")
-st.write("Paste the video URL from any social media platform to download audio as MP3:")
+# Title
+st.set_page_config(page_title="MediaSnatcher", page_icon="🎬")
+st.title("🎬 Media Snatcher")
+st.write("Download your favorite audio and video files easily!")
 
-video_url = st.text_input("🔗 Video URL")
+# Sidebar - Download Options
+st.sidebar.header("📥 Download Settings")
 
-if video_url:
-    try:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            # FFmpeg detection
-            ffmpeg_path = "C:/ffmpeg/ffmpeg-7.1.1-essentials_build/bin/ffmpeg.exe"
-            ffmpeg_location = ffmpeg_path if os.path.exists(ffmpeg_path) else None
+video_url = st.text_input("🔗 Enter Video URL:")
 
-            # YDL options
-            ydl_opts = {
-                'format': 'bestaudio/best',
-                'outtmpl': os.path.join(temp_dir, '%(title)s.%(ext)s'),
-                'postprocessors': [{
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                    'preferredquality': '192',
-                }],
-                'forceipv4': True,
-                'cookiefile': 'cookies.txt',
-                'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
-            }
+download_type = st.sidebar.radio("What do you want to download?", ("Audio (MP3)", "Video (MP4)"))
 
-            if ffmpeg_location:
-                ydl_opts['ffmpeg_location'] = ffmpeg_location
+if download_type == "Audio (MP3)":
+    audio_quality = st.sidebar.selectbox("Select Audio Quality:", ("128", "192", "320"))
+else:
+    video_quality = st.sidebar.selectbox("Select Video Resolution:", ("360p", "480p", "720p", "1080p"))
 
-            if st.button("Prepare Audio"):
+# Main action button
+if st.button("🚀 Prepare Download"):
+    if video_url:
+        try:
+            with tempfile.TemporaryDirectory() as temp_dir:
+                # FFmpeg detection
+                ffmpeg_path = "C:/ffmpeg/ffmpeg-7.1.1-essentials_build/bin/ffmpeg.exe"
+                ffmpeg_location = ffmpeg_path if os.path.exists(ffmpeg_path) else None
+
+                # Basic options
+                ydl_opts = {
+                    'outtmpl': os.path.join(temp_dir, '%(title)s.%(ext)s'),
+                    'forceipv4': True,
+                    'cookiefile': 'cookies.txt',
+                    'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+                }
+
+                # Customizing based on choice
+                if download_type == "Audio (MP3)":
+                    ydl_opts.update({
+                        'format': 'bestaudio/best',
+                        'postprocessors': [{
+                            'key': 'FFmpegExtractAudio',
+                            'preferredcodec': 'mp3',
+                            'preferredquality': audio_quality,
+                        }]
+                    })
+                else:  # Video
+                    format_map = {
+                        "360p": "bestvideo[height<=360]+bestaudio/best[height<=360]",
+                        "480p": "bestvideo[height<=480]+bestaudio/best[height<=480]",
+                        "720p": "bestvideo[height<=720]+bestaudio/best[height<=720]",
+                        "1080p": "bestvideo[height<=1080]+bestaudio/best[height<=1080]",
+                    }
+                    ydl_opts['format'] = format_map.get(video_quality, 'best')
+
+                if ffmpeg_location:
+                    ydl_opts['ffmpeg_location'] = ffmpeg_location
+
+                # Start Download
                 with YoutubeDL(ydl_opts) as ydl:
-                    # Extract video info
                     info_dict = ydl.extract_info(video_url, download=True)
                     thumbnail_url = info_dict.get("thumbnail", None)
 
-                    # Display thumbnail if available
                     if thumbnail_url:
-                        st.image(thumbnail_url, caption="Video Thumbnail", use_container_width=True)
+                        st.image(thumbnail_url, caption="Thumbnail", use_container_width=True)
 
                     downloaded_filename = ydl.prepare_filename(info_dict)
-                    base, _ = os.path.splitext(downloaded_filename)
-                    mp3_filename = base + '.mp3'
+                    base, ext = os.path.splitext(downloaded_filename)
 
-                    if os.path.exists(mp3_filename):
-                        st.success("✅ Audio prepared successfully!")
-                        with open(mp3_filename, "rb") as f:
+                    if download_type == "Audio (MP3)":
+                        final_filename = base + '.mp3'
+                        mime_type = 'audio/mpeg'
+                    else:
+                        final_filename = downloaded_filename
+                        mime_type = 'video/mp4'
+
+                    if os.path.exists(final_filename):
+                        st.success(f"✅ {download_type} ready! Click below to download.")
+                        st.balloons()
+
+                        with open(final_filename, "rb") as f:
                             st.download_button(
-                                label="⬇️ Download MP3",
+                                label=f"⬇️ Download {download_type}",
                                 data=f,
-                                file_name=os.path.basename(mp3_filename),
-                                mime="audio/mpeg"
+                                file_name=os.path.basename(final_filename),
+                                mime=mime_type
                             )
                     else:
-                        st.error("❌ File was not found after download.")
-    except Exception as e:
-        st.error(f"❌ Error: {e}")
+                        st.error("❌ Error: File not found.")
+        except Exception as e:
+            st.error(f"❌ Error: {e}")
+    else:
+        st.error("❗ Please enter a valid URL.")
