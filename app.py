@@ -2,8 +2,12 @@ import streamlit as st  # type: ignore
 from yt_dlp import YoutubeDL  # type: ignore
 import os
 import tempfile
+import requests    
 
-# Title
+# 🔑 Add your YouTube Data API key here
+API_KEY = "AIzaSyBqnLbn8m8hmbOorgc2rGFfOaYl7BCfZz4"
+
+# Set page config
 st.set_page_config(page_title="MediaSnatcher", page_icon="🎬")
 st.title("🎬 Media Snatcher")
 st.write("Download your favorite audio and video files easily!")
@@ -19,6 +23,27 @@ if download_type == "Audio (MP3)":
     audio_quality = st.sidebar.selectbox("Select Audio Quality:", ("128", "192", "320"))
 else:
     video_quality = st.sidebar.selectbox("Select Video Resolution:", ("360p", "480p", "720p", "1080p"))
+
+# Extract thumbnail via YouTube Data API (if applicable)
+def get_youtube_thumbnail(video_url):
+    try:
+        if "youtube.com" in video_url or "youtu.be" in video_url:
+            video_id = ""
+            if "youtu.be" in video_url:
+                video_id = video_url.split("/")[-1].split("?")[0]
+            elif "v=" in video_url:
+                video_id = video_url.split("v=")[1].split("&")[0]
+            elif "shorts" in video_url:
+                video_id = video_url.split("shorts/")[-1].split("?")[0]
+
+            api_url = f"https://www.googleapis.com/youtube/v3/videos?part=snippet&id={video_id}&key={API_KEY}"
+            response = requests.get(api_url)
+            data = response.json()
+            if "items" in data and len(data["items"]) > 0:
+                return data["items"][0]["snippet"]["thumbnails"]["high"]["url"]
+    except:
+        return None
+    return None
 
 # Main action button
 if st.button("🚀 Prepare Download"):
@@ -62,7 +87,7 @@ if st.button("🚀 Prepare Download"):
                 # Start Download
                 with YoutubeDL(ydl_opts) as ydl:
                     info_dict = ydl.extract_info(video_url, download=True)
-                    thumbnail_url = info_dict.get("thumbnail", None)
+                    thumbnail_url = info_dict.get("thumbnail") or get_youtube_thumbnail(video_url)
 
                     if thumbnail_url:
                         st.image(thumbnail_url, caption="Thumbnail", use_container_width=True)
